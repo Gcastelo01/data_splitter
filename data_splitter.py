@@ -14,7 +14,7 @@ DIRS = ['train', 'test', 'val']
 def parser():
     global PARAMS
 
-    p = argparse.ArgumentParser(prog="Dataset Splitter", description="Este programa separa um dataset yolo de acordo com o tamanho da bounding box em relação à imagem. Útil para dividir dataset em imagens mais fáceis ou difíceis de serem aprendidas pelo modelo", epilog="© Proconcept Sistemas LTDA. 2024")
+    p = argparse.ArgumentParser(prog="Dataset Splitter", description="Este programa separa um dataset yolo de acordo com o tamanho da bounding box em relação à imagem. Útil para dividir dataset em imagens mais fáceis ou difíceis de serem aprendidas pelo modelo")
 
     p.add_argument('dataset', help="Caminho para o dataset (caminho absoluto)")
     p.add_argument('data_name', default="data.yaml", help="Nome do arquivo .yaml com dados do dataset. (Default = data.yaml)", )
