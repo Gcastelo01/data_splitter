@@ -1,4 +1,5 @@
 import argparse
+import yaml
 
 from pylabel import importer
 from os import mkdir, listdir
@@ -114,13 +115,32 @@ def save_new_dataset(data: list, dest: str) -> None:
                 l_path = join(currdir, label)
 
                 if exists(l_path) and exists(i_path):
-                    print(f"Saving {i_path}...")
-                    print(f"Saving {l_path}...")
+                    print(f"[+] Saving {i_path}...")
+                    print(f"[+] Saving {l_path}...")
                     move(l_path, l_dir)
                     move(i_path, i_dir)
         
         rmtree(images)
         rmtree(labels)
+        
+        print("[+] Atualizando data.yaml...")
+        
+        dest = abspath(PARAMS.destination)
+        arq = join(dest, PARAMS.data_name)
+    
+        with open(arq, mode='r') as y:
+            file = yaml.load(y, Loader=yaml.FullLoader)
+            file['train'] = join(dest, 'train/images')
+            file['test'] = join(dest, 'test/images')
+            file['val'] = join(dest, 'val/images')
+        
+            y.close()
+            
+        with open(arq, 'w') as y:
+            yaml.dump(file, y)
+        
+        print("[+] data.yaml Atualizado!")
+            
 
 def process_dataset():
     abs = PARAMS.dataset
