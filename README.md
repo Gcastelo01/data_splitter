@@ -52,7 +52,7 @@ Onde:
 - ```-d DESTINATION --destination DESTINATION``` é o **NOME** do novo dataset que será gerado ao lado do dataset antigo. O dataset novo obedecerá à estrutura:
 
     ```raw
-        .
+        <DESTINATION>
         |---data.yaml
         |
         ├── test
