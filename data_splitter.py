@@ -2,7 +2,8 @@ import argparse
 import yaml
 
 from pylabel import importer
-from os import mkdir, listdir
+from glob import glob
+from os import mkdir, listdir, remove
 from shutil import copy2, move, rmtree
 from os.path import abspath, exists, join
 
@@ -92,14 +93,16 @@ def save_new_dataset(data: list, dest: str) -> None:
         dataset = importer.ImportYoloV5(path=labels, path_to_images=images)
         dataset.splitter.StratifiedGroupShuffleSplit(train_pct=0.6, test_pct=0.2, val_pct=0.2)
 
-        dataset.export.ExportToYoloV5(output_path=PARAMS.destination,use_splits=True, copy_images=True)
-
+        dataset.export.ExportToYoloV5(output_path=PARAMS.destination,use_splits=True)
+        
+        remove("dataset.yaml")
+        
         for i in DIRS:
-            dest = abspath(PARAMS.destination)
-            
-            currdir = join(dest, i)
+            dest = abspath(PARAMS.destination)  # Aqui vai ser './novo-dataset'
 
-            l_dir = join(currdir, 'labels')
+            currdir = join(dest, i)  # Então, currdir = ./novo-dataset/<train, test ou val>
+
+            l_dir = join(currdir, 'labels') 
             i_dir = join(currdir, 'images')
 
             if not exists(l_dir):
@@ -108,17 +111,20 @@ def save_new_dataset(data: list, dest: str) -> None:
             if not exists(i_dir):
                 mkdir(i_dir)
             
-            for label in listdir(currdir):
-                eq_jpg = label[:-4] + ".jpg"
+            for label in listdir(currdir):  # A label aqui é, por exemplo, ./novo-dataset/train/nome.txt
+                eq_jpg = label[:-4] + ".*"
                 
                 i_path = join(images, eq_jpg)
                 l_path = join(currdir, label)
 
-                if exists(l_path) and exists(i_path):
+                if exists(l_path) and glob(i_path):
+                    
+                    i_path = glob(i_path)[0]
+
                     print(f"[+] Saving {i_path}...")
+                    move(i_path, i_dir)
                     print(f"[+] Saving {l_path}...")
                     move(l_path, l_dir)
-                    move(i_path, i_dir)
         
         rmtree(images)
         rmtree(labels)
