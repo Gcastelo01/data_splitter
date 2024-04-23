@@ -1,6 +1,8 @@
 import argparse
 import yaml
 
+import numpy as np
+
 from pylabel import importer
 from glob import glob
 from os import mkdir, listdir, remove
@@ -10,11 +12,12 @@ from os.path import abspath, exists, join
 
 
 PARAMS = []
-DIRS = ['train', 'test', 'val']
+DIRS = []
 
 
 def parser():
     global PARAMS
+    global DIRS
 
     p = argparse.ArgumentParser(prog="Dataset Splitter", description="Este programa separa um dataset yolo de acordo com o tamanho da bounding box em relação à imagem. Útil para dividir dataset em imagens mais fáceis ou difíceis de serem aprendidas pelo modelo")
 
@@ -31,6 +34,45 @@ def parser():
 
     PARAMS = p.parse_args()
     PARAMS.percent = PARAMS.percent / 100
+
+    data = join(PARAMS.dataset, PARAMS.data_name)
+
+    with open(data, 'r') as y:
+        file = yaml.load(y, yaml.FullLoader)
+
+        for i in ['train', 'test', 'val']:
+            if PARAMS.invert:
+                d = file[i].split('/')[-1]
+                DIRS.append(d)
+            else:
+                d = file[i].split('/')[-2]
+                DIRS.append(d)
+
+
+def generate_statistics(labels: list, classes: int) -> list[int, list]:
+    """
+    A tupla retornada possui (<total de labels>, <lista, onde posição é o id da classe>)
+    """
+    count_total = 0
+    count_cls = []
+
+    for _ in range(classes):
+        count_cls.append(0)
+
+    for label in labels:
+        label = label.strip("\n").strip().split(" ")
+        class_id = int(label[0])
+
+        count_cls[class_id] += 1
+        count_total += 1
+
+    return (count_total, count_cls)
+
+
+def print_stats(info_cls: np.ndarray, names: list, total: int) -> None:
+    for idx, i in enumerate(info_cls):
+        t = (i / total) * 100
+        print(f"Classe {names[idx]}: {t:.2f}%")
 
 
 def calculate_bb_size(labels: list) -> list:
@@ -150,18 +192,30 @@ def save_new_dataset(data: list, dest: str) -> None:
 
 def process_dataset():
     abs = PARAMS.dataset
+    nc = 0
+    classes_names = []
 
     if not exists(PARAMS.destination):
         mkdir(PARAMS.destination)
 
     dest_path = abspath(PARAMS.destination)
+    data = join(PARAMS.dataset, PARAMS.data_name)
 
+    with open(data, "r") as f:
+        file = yaml.load(f, Loader=yaml.FullLoader)
+        classes_names = file['names']
+        nc = len(file['names'])
+        
+        f.close()
+
+    total_annotations = 0
+    ann_per_cls = np.ndarray(nc)
 
     if exists(abs):
         to_copy = []
 
-        for p in ['train', 'test','val']:
-            print(f"Processando {p}")
+        for p in DIRS:
+            print(f"[+] Processando {p}")
             count = 0
 
             if PARAMS.invert:
@@ -181,9 +235,14 @@ def process_dataset():
             for img in listdir(img_path):
                 name = img[:-4]
                 labels = find_corr_labels(labels_path, name)
+
                 count += 1
 
                 if calculate_percent(join(img_path, img), labels):
+                    stats = generate_statistics(labels, nc)
+                    total_annotations += stats[0]
+                    ann_per_cls = ann_per_cls + np.array(stats[1])
+
                     label_name = join(labels_path, name)
                     label_name += ".txt"
 
@@ -191,7 +250,11 @@ def process_dataset():
 
             print(f"{count} imagens processadas em {p}.")
 
-        i = input(f"{len(to_copy)} imagens com bounding box >= {PARAMS.percent * 100:.2f}% Continuar com a operação ")
+
+        print(f'\n\n| RESULTADOS DA PARTIÇÃO |\n{len(to_copy)} imagens com bounding box >= {PARAMS.percent * 100:.2f}%. \n\nTotal de classes: {nc}')
+        print_stats(ann_per_cls, classes_names,total_annotations)
+
+        i = input(f"Continuar com a operação? [y/n] ")
 
         if i not in ["no", 'n']:
             save_new_dataset(to_copy, dest_path)
