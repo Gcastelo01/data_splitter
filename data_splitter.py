@@ -261,6 +261,7 @@ def process_dataset():
 
         else: 
             print("Operação abortada!")
+            rmtree(PARAMS.destination)
 
 
 if __name__ == '__main__':
