@@ -27,6 +27,8 @@ share/python-wheels/
 MANIFEST
 README_files/
 .vscode/
+luvas*/
+runs/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -129,6 +131,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*.pt
 
 # Spyder project settings
 .spyderproject
